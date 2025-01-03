@@ -26,7 +26,7 @@ def _concretize(hint: type, generics: dict[type, type]) -> type:
     return hint
 
 
-def _orig(data_class: type) -> Any:
+def orig(data_class: type) -> Any:
     # NOTE Page[Entity] is not recognized as dataclass even though both Page and Entity are dataclasses
     if is_dataclass(data_class):
         return data_class
@@ -51,7 +51,7 @@ def my_get_type_hints(data_class: type, *args, **kwargs) -> dict[str, Any]:
             if base_origin is not Generic:
                 _add_generics(base_origin, base_args, generics)
 
-    hints = get_type_hints(_orig(data_class), *args, **kwargs)
+    hints = get_type_hints(orig(data_class), *args, **kwargs)
 
     for key, hint in hints.copy().items():
         hints[key] = _concretize(hint, generics)
@@ -61,4 +61,4 @@ def my_get_type_hints(data_class: type, *args, **kwargs) -> dict[str, Any]:
 
 def my_get_fields(data_class: type) -> list[Field]:
     """An overwrite of dacite's get_fields function, supporting generics."""
-    return get_fields(_orig(data_class))
+    return get_fields(orig(data_class))

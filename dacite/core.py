@@ -32,7 +32,7 @@ from dacite.types import (
     is_subclass,
 )
 
-from dacite.utils import my_get_fields, my_get_type_hints
+from dacite.utils import my_get_fields, my_get_type_hints, orig
 
 T = TypeVar("T")
 
@@ -96,7 +96,7 @@ def _build_value(type_: Type, data: Any, config: Config) -> Any:
         data = _build_value_for_union(union=type_, data=data, config=config)
     elif is_generic_collection(type_):
         data = _build_value_for_collection(collection=type_, data=data, config=config)
-    elif cache(is_dataclass)(type_) and isinstance(data, Mapping):
+    elif cache(is_dataclass)(orig(type_)) and isinstance(data, Mapping):
         data = from_dict(data_class=type_, data=data, config=config)
     for cast_type in config.cast:
         if is_subclass(type_, cast_type):
