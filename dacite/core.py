@@ -1,6 +1,6 @@
 from dataclasses import is_dataclass
 from itertools import zip_longest
-from typing import TypeVar, Type, Optional, get_type_hints, Mapping, Any, Collection, MutableMapping
+from typing import TypeVar, Type, Optional, Mapping, Any, Collection, MutableMapping
 
 from dacite.cache import cache
 from dacite.config import Config
@@ -8,7 +8,6 @@ from dacite.data import Data
 from dacite.dataclasses import (
     get_default_value_for_field,
     DefaultValueNotFoundError,
-    get_fields,
     is_frozen,
 )
 from dacite.exceptions import (
@@ -33,6 +32,8 @@ from dacite.types import (
     is_subclass,
 )
 
+from dacite.utils import my_get_fields, my_get_type_hints
+
 T = TypeVar("T")
 
 
@@ -48,20 +49,20 @@ def from_dict(data_class: Type[T], data: Data, config: Optional[Config] = None) 
     post_init_values: MutableMapping[str, Any] = {}
     config = config or Config()
     try:
-        data_class_hints = cache(get_type_hints)(data_class, localns=config.hashable_forward_references)
+        data_class_hints = cache(my_get_type_hints)(data_class, localns=config.hashable_forward_references)
     except NameError as error:
         raise ForwardReferenceError(str(error))
-    data_class_fields = cache(get_fields)(data_class)
+    data_class_fields = cache(my_get_fields)(data_class)
     if config.strict:
         extra_fields = set(data.keys()) - {f.name for f in data_class_fields}
         if extra_fields:
             raise UnexpectedDataError(keys=extra_fields)
     for field in data_class_fields:
         field_type = data_class_hints[field.name]
-        if field.name in data:
+        key = config.convert_key(field.name)
+        if key in data:
             try:
-                field_data = data[field.name]
-                value = _build_value(type_=field_type, data=field_data, config=config)
+                value = _build_value(type_=field_type, data=data[key], config=config)
             except DaciteFieldError as error:
                 error.update_path(field.name)
                 raise
